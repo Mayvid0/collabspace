@@ -16,7 +16,6 @@ const modules = {
     ["clean"],
   ],
 };
- 
 const formats = [
   "header",
   "bold",
@@ -42,11 +41,12 @@ type textEditorProps = {
 };
  
 export const TextEditor: React.FC<textEditorProps> = ({enteredText,placeholder,onTyping}) => {
-    // console.log(enteredText)
+
+  console.log(enteredText)
+
   return (
     <>
       <ReactQuill
-        
         theme="snow"
         value={enteredText || ""}
         modules={modules}
@@ -54,7 +54,6 @@ export const TextEditor: React.FC<textEditorProps> = ({enteredText,placeholder,o
         onChange={onTyping}
         placeholder={placeholder}
       /> 
-
     </>
   );
 };
