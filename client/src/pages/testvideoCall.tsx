@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { FaCamera, FaMicrophone, FaPhone } from "react-icons/fa";
 import { useNavigate, useParams } from "react-router-dom";
 
-
+const APP_ID = "0bf8d63c8b884fe4afc554b7d240df16";
 
 const VideoChat: React.FC = () => {
   let token = "";
@@ -19,8 +19,6 @@ const VideoChat: React.FC = () => {
   const localStreamRef = useRef<HTMLVideoElement>(null);
   const remoteStreamRef = useRef<HTMLVideoElement>(null);
   let localStream: MediaStream;
-
-  // const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   let peerConnection: any;
 
   const servers = {
@@ -41,6 +39,15 @@ const VideoChat: React.FC = () => {
     },
     audio: true,
   };
+
+  // useEffect(() => {
+  //   // Logic to determine if the remote stream is available
+  //   const isRemoteStreamAvailable =
+  //     remoteStreamRef.current?.srcObject !== null &&
+  //     remoteStreamRef.current?.srcObject !== undefined;
+  //   setRemoteStreamAvailable(isRemoteStreamAvailable);
+  //   console.log(remoteStreamAvailable)
+  // }, [remoteStreamRef]);
 
   useEffect(() => {
     navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
@@ -137,10 +144,10 @@ const VideoChat: React.FC = () => {
   };
 
   const handleUserLeft = (memberId: string) => {
-        const videoElement = document.getElementById('user-2');
-        if (videoElement) {
-            videoElement.style.display = 'none'; 
-        }
+    const videoElement = document.getElementById("user-2");
+    if (videoElement) {
+      videoElement.style.display = "none";
+    }
   };
 
   const createAnswer = async (memberId: string, offer: any) => {
@@ -189,73 +196,119 @@ const VideoChat: React.FC = () => {
     }
   };
 
-  const leaveChannel = async () => {  
-    await channel.leave()
-      await client?.logout()
-  }
+  const leaveChannel = async () => {
+    await channel.leave();
+    await client?.logout();
+  };
 
   const toggleCamera = async () => {
-    let videoTrack = localStream.getTracks().find(track => track.kind === 'video')
+    let videoTrack = localStream
+      .getTracks()
+      .find((track) => track.kind === "video");
 
-    if(videoTrack?.enabled){
-        videoTrack.enabled = false
-        const camera= document.getElementById('camera-btn')
-        if(camera) camera.style.backgroundColor = 'rgb(255, 80, 80)'    
-    }else{
-        videoTrack!.enabled = true
-        const camera= document.getElementById('camera-btn')
-        if(camera) camera.style.backgroundColor = 'rgb(179, 102, 249, .9)'
+    if (videoTrack?.enabled) {
+      videoTrack.enabled = false;
+      const camera = document.getElementById("camera-btn");
+      if (camera) camera.style.backgroundColor = "rgb(255, 80, 80)";
+    } else {
+      videoTrack!.enabled = true;
+      const camera = document.getElementById("camera-btn");
+      if (camera) camera.style.backgroundColor = "#5440A1";
     }
-}
+  };
 
-const toggleMic = async () => {
-  let audioTrack = localStream.getTracks().find(track => track.kind === 'audio')
+  const toggleMic = async () => {
+    let audioTrack = localStream
+      .getTracks()
+      .find((track) => track.kind === "audio");
+    
+    if (audioTrack?.enabled) {
+      audioTrack.enabled = false;
+      const mic = document.getElementById("mic-btn");
+      if (mic) mic.style.backgroundColor = "rgb(255, 80, 80)";
+    } else {
+      audioTrack!.enabled = true;
+      const mic = document.getElementById("mic-btn");
+      if (mic) mic.style.backgroundColor = "#5440A1";
+    }
+  };
 
-  if(audioTrack?.enabled){
-      audioTrack.enabled = false
-      const mic = document.getElementById('mic-btn')
-      if(mic) mic.style.backgroundColor = 'rgb(255, 80, 80)'
-  }else{
-      audioTrack!.enabled = true
-      const mic = document.getElementById('mic-btn')
-      if(mic) mic.style.backgroundColor = 'rgb(179, 102, 249, .9)'
-  }
-}
-
-const leaveChannelHandler = () => {
-  // console.log('leaving channel')
-    leaveChannel()
-}
+  const leaveChannelHandler = () => {
+    // Leave the channel
+    leaveChannel();
+  
+    // Revoke camera and microphone permissions
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      navigator.mediaDevices.enumerateDevices()
+        .then(devices => {
+          devices.forEach(device => {
+            if (device.kind === 'videoinput' || device.kind === 'audioinput') {
+              navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                  const tracks = stream.getTracks();
+                  tracks.forEach(track => track.stop());
+                })
+                .catch(error => {
+                  console.error('Error stopping tracks:', error);
+                });
+            }
+          });
+        })
+        .catch(error => {
+          console.error('Error enumerating devices:', error);
+        });
+    }
+  
+    // Navigate to the specified URL
+    navigate('/');
+  };
+  
 
   return (
     <>
-      <div className="flex justify-center h-full flex-col md:flex-row">
+      <div className="relative h-screen overflow-hidden">
+        {/* Local video */}
+        <video
+          ref={remoteStreamRef}
+          className="absolute inset-0 object-cover w-full h-full"
+          autoPlay
+          playsInline
+          style={{ transform: "scaleX(-1)" }}
+        ></video>
+
+        {/* Remote video */}
         <video
           ref={localStreamRef}
-          className="bg-black w-full md:w-1/2 h-full m-2"
-          autoPlay
-          playsInline
-          style={{ transform: "scaleX(-1)" }}
-        ></video>
-        <video
           id="user-2"
-          ref={remoteStreamRef}
-          className="bg-black w-full md:w-1/2 h-full m-2"
+          className="absolute top-4 left-4 sm:top-8 sm:right-8 bg-black z-20 object-cover"
           autoPlay
           playsInline
-          style={{ transform: "scaleX(-1)" }}
+          style={{ height: "25%", width: "25%", transform: "scaleX(-1)" }}
         ></video>
-      </div>
-      <div className="flex items-center justify-center bg-gray-900 bg-opacity-50">
-        <button id="camera-btn" className="text-white p-2" onClick={toggleCamera}>
-          <FaCamera />
-        </button>
-        <button onClick={toggleMic} className="text-white p-2">
-          <FaMicrophone />
-        </button>
-        <button onClick={leaveChannelHandler} className="text-white p-2">
-          <FaPhone />
-        </button>
+
+        {/* Icons */}
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center  bg-opacity-50 p-4">
+          <button
+            id="camera-btn"
+            className="text-white p-5 rounded-full bg-custom-purple mr-4"
+            onClick={toggleCamera}
+          >
+            <FaCamera />
+          </button>
+          <button
+            onClick={toggleMic}
+            id="mic-btn"
+            className="text-white p-5 rounded-full bg-custom-purple mr-4"
+          >
+            <FaMicrophone />
+          </button>
+          <button
+            onClick={leaveChannelHandler}
+            className="text-white p-5 rounded-full bg-custom-purple mr-4"
+          >
+            <FaPhone />
+          </button>
+        </div>
       </div>
     </>
   );
